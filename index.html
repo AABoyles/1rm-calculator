@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1RM Calculator</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0F0F0F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="1RM">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="h1-btn" id="infoBtn">1RM</button>
+            <div class="header-meta">
+                <span class="subtitle">Calculator</span>
+                <button class="formula-tag" id="formulaBtn">Marzagao ↗</button>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <span class="control-label">Unit</span>
+                <div class="btn-toggle" id="unitToggle">
+                    <button class="toggle-btn active" data-value="lbs">lbs</button>
+                    <button class="toggle-btn" data-value="kg">kg</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Display</span>
+                <div class="btn-toggle" id="roundToggle">
+                    <button class="toggle-btn active" data-value="round">Round</button>
+                    <button class="toggle-btn" data-value="exact">Exact</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="calculatorView">
+            <div class="form-group">
+                <label for="liftType">Lift</label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="liftType"
+                        placeholder="e.g. Back Squat"
+                        autocomplete="off"
+                    >
+                    <div class="autocomplete-list" id="autocompleteList"></div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="weight">Weight <span id="weightUnit">lbs</span></label>
+                    <input
+                        type="number"
+                        id="weight"
+                        placeholder="0"
+                        min="0"
+                        step="1"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="reps">Reps</label>
+                    <input
+                        type="number"
+                        id="reps"
+                        placeholder="0"
+                        min="1"
+                        max="100"
+                        value="1"
+                    >
+                </div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">Est. 1-Rep Max</div>
+                <div class="result-number">
+                    <span class="result-value" id="result">—</span>
+                    <span class="result-unit" id="unitDisplay">lbs</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="historyView" hidden></div>
+
+        <div id="percentageView" hidden></div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" data-view="calculatorView">Calculator</button>
+            <button class="tab-btn" data-view="percentageView">% Table</button>
+            <button class="tab-btn" data-view="historyView">My 1RMs</button>
+        </div>
+    </div>
+
+    <!-- What is 1RM Modal -->
+    <div class="modal" id="infoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>What is a 1RM?</h2>
+                <button class="close-btn" id="closeInfoModal">&times;</button>
+            </div>
+            <div class="formula-body">
+                <p>Your <strong>one-rep max (1RM)</strong> is the most weight you can lift for a single rep with good form. It's the standard measure of absolute strength for a given exercise.</p>
+
+                <p>You rarely need to actually attempt a true 1RM — grinding out a max single is taxing and carries injury risk. Instead, this calculator estimates it from a set you already did.</p>
+
+                <div class="formula-display">
+                    <div class="info-steps">
+                        <div class="info-step">
+                            <span class="step-num">1</span>
+                            <span>Pick the exercise — e.g. <em>Back Squat</em></span>
+                        </div>
+                        <div class="info-step">
+                            <span class="step-num">2</span>
+                            <span>Enter the weight you lifted and how many reps you completed</span>
+                        </div>
+                        <div class="info-step">
+                            <span class="step-num">3</span>
+                            <span>Read your estimated 1RM — then hit <strong>% Table</strong> to see training weights at every intensity zone</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p>For best accuracy, use a set where you reached close to failure — ideally between 3 and 10 reps. Very high-rep sets (15+) become less reliable because fatigue and technique break down before true muscular failure.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formula Info Modal -->
+    <div class="modal" id="formulaModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Marzagão Formula</h2>
+                <button class="close-btn" id="closeFormulaModal">&times;</button>
+            </div>
+            <div class="formula-body">
+                <p>This calculator uses the <strong>Marzagao weight-dependent formula</strong>, which adjusts the rep-to-1RM relationship based on how heavy the working weight is. Heavier loads yield a different fatigue curve than lighter loads, so a single fixed multiplier (like Epley or Brzycki) systematically over- or under-estimates at the extremes.</p>
+
+                <div class="formula-display">
+                    <div class="formula-line">
+                        <span class="formula-var">1RM</span>
+                        <span class="formula-eq">=</span>
+                        <span class="formula-expr">w &times; <span class="formula-paren">(</span>1 + <div class="formula-frac"><span class="formula-num">(r &minus; 1)<sup>0.85</sup></span><span class="formula-den">&minus;2.55 + 4.58 &times; ln(w)</span></div><span class="formula-paren">)</span></span>
+                    </div>
+                    <div class="formula-key">
+                        <span><em>w</em> = weight lifted &nbsp;&middot;&nbsp; <em>r</em> = reps performed</span>
+                    </div>
+                </div>
+
+                <p>The formula is undefined for very low weights (where the denominator &minus;2.55 + 4.58&thinsp;&times;&thinsp;ln(<em>w</em>) approaches zero), so the calculator shows — in those cases.</p>
+
+                <p>When rounding is enabled, the estimated 1RM is <strong>floored</strong> to the nearest loadable increment (5 lb / 0.5 kg), so the result is always a weight you can actually put on the bar.</p>
+
+                <a class="formula-link" href="https://sportrxiv.org/index.php/server/preprint/view/768" target="_blank" rel="noopener">
+                    Read the paper &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+<script src="script.js" type="module"></script>
+</body>
+</html>
