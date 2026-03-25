@@ -129,15 +129,18 @@ function updateResult() {
   const reps = parseInt(document.getElementById('reps').value);
 
   const resultEl = document.getElementById('result');
+  const shareBtn = document.getElementById('shareBtn');
 
   if (!weight || weight <= 0 || !reps || reps < 1) {
     resultEl.textContent = '—';
+    shareBtn.hidden = true;
     return;
   }
 
   const oneRM = calculate1RM(weight, reps);
   if (oneRM === null) {
     resultEl.textContent = '—';
+    shareBtn.hidden = true;
     return;
   }
   const rounded = roundValue(oneRM, currentUnit);
@@ -145,6 +148,43 @@ function updateResult() {
   // When rounding, lbs shows whole numbers; when not rounding, show 1 decimal for both
   const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
   resultEl.textContent = rounded.toFixed(decimals);
+  shareBtn.hidden = false;
+}
+
+// Load state from URL hash (e.g. #lift=Back+Squat&weight=275&reps=5&unit=lbs)
+function loadFromURL() {
+  const hash = location.hash.slice(1);
+  if (!hash) return false;
+  const params = new URLSearchParams(hash);
+  const lift = params.get('lift');
+  const weight = params.get('weight');
+  const reps = params.get('reps');
+  const unit = params.get('unit');
+
+  if (lift) { document.getElementById('liftType').value = lift; currentLift = lift; }
+  if (weight) document.getElementById('weight').value = weight;
+  if (reps) document.getElementById('reps').value = reps;
+  if (unit && (unit === 'lbs' || unit === 'kg')) {
+    currentUnit = unit;
+    document.querySelectorAll('#unitToggle .toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === unit);
+    });
+  }
+  history.replaceState(null, '', location.pathname);
+  return true;
+}
+
+// Build a shareable URL encoding the current calculator state
+function buildShareURL() {
+  const lift = document.getElementById('liftType').value;
+  const weight = document.getElementById('weight').value;
+  const reps = document.getElementById('reps').value;
+  const params = new URLSearchParams();
+  if (lift) params.set('lift', lift);
+  if (weight) params.set('weight', weight);
+  if (reps) params.set('reps', reps);
+  params.set('unit', currentUnit);
+  return `${location.origin}${location.pathname}#${params.toString()}`;
 }
 
 // Load from localStorage
@@ -465,6 +505,29 @@ document.getElementById('liftType').addEventListener('change', () => {
   saveState();
 });
 
+// Share button
+document.getElementById('shareBtn').addEventListener('click', () => {
+  const url = buildShareURL();
+  const lift = currentLift || 'Exercise';
+  const weight = document.getElementById('weight').value;
+  const reps = document.getElementById('reps').value;
+  const oneRM = document.getElementById('result').textContent;
+
+  if (navigator.share) {
+    navigator.share({
+      title: '1RM Calculator',
+      text: `${lift} 1RM: ${oneRM} ${currentUnit} (from ${weight} × ${reps})`,
+      url,
+    });
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('shareBtn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Share'; }, 1500);
+    });
+  }
+});
+
 // Info modal
 document.getElementById('infoBtn').addEventListener('click', () => {
   document.getElementById('infoModal').classList.add('active');
@@ -502,7 +565,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Initialize
 setupAutocomplete();
-loadState();
+if (!loadFromURL()) loadState();
 applyWeightStep();
 updateResult();
 
