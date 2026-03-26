@@ -129,18 +129,18 @@ function updateResult() {
   const reps = parseInt(document.getElementById('reps').value);
 
   const resultEl = document.getElementById('result');
-  const shareBtn = document.getElementById('shareBtn');
+  const resultActions = document.getElementById('resultActions');
 
   if (!weight || weight <= 0 || !reps || reps < 1) {
     resultEl.textContent = '—';
-    shareBtn.hidden = true;
+    resultActions.hidden = true;
     return;
   }
 
   const oneRM = calculate1RM(weight, reps);
   if (oneRM === null) {
     resultEl.textContent = '—';
-    shareBtn.hidden = true;
+    resultActions.hidden = true;
     return;
   }
   const rounded = roundValue(oneRM, currentUnit);
@@ -148,7 +148,7 @@ function updateResult() {
   // When rounding, lbs shows whole numbers; when not rounding, show 1 decimal for both
   const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
   resultEl.textContent = rounded.toFixed(decimals);
-  shareBtn.hidden = false;
+  resultActions.hidden = false;
 }
 
 // Load state from URL hash (e.g. #lift=Back+Squat&weight=275&reps=5&unit=lbs)
@@ -233,20 +233,37 @@ function saveState() {
 }
 
 // Per-lift localStorage helpers
+// Data format: { liftName: [{weight, reps, unit, date}, ...], ... }
+// Migrates legacy single-object format on read.
+function getLifts() {
+  const raw = JSON.parse(localStorage.getItem('1rmLifts') || '{}');
+  const migrated = {};
+  for (const [name, data] of Object.entries(raw)) {
+    migrated[name] = Array.isArray(data) ? data : [data];
+  }
+  return migrated;
+}
+
+function saveLifts(lifts) {
+  localStorage.setItem('1rmLifts', JSON.stringify(lifts));
+}
+
 function saveLiftData() {
   if (!currentLift) return;
   const weight = document.getElementById('weight').value;
   const reps = document.getElementById('reps').value;
   if (!weight) return;
-  const lifts = JSON.parse(localStorage.getItem('1rmLifts') || '{}');
-  lifts[currentLift] = { weight, reps, unit: currentUnit, date: new Date().toISOString() };
-  localStorage.setItem('1rmLifts', JSON.stringify(lifts));
+  const lifts = getLifts();
+  if (!lifts[currentLift]) lifts[currentLift] = [];
+  lifts[currentLift].push({ weight, reps, unit: currentUnit, date: new Date().toISOString() });
+  saveLifts(lifts);
 }
 
 function loadLiftData(liftName) {
-  const lifts = JSON.parse(localStorage.getItem('1rmLifts') || '{}');
-  const data = lifts[liftName];
-  if (!data) return;
+  const lifts = getLifts();
+  const entries = lifts[liftName];
+  if (!entries || entries.length === 0) return;
+  const data = entries[entries.length - 1]; // most recent
   let weight = parseFloat(data.weight);
   if (data.unit && data.unit !== currentUnit) {
     weight = currentUnit === 'kg' ? weight / 2.20462 : weight * 2.20462;
@@ -317,40 +334,110 @@ function renderPercentageView() {
 }
 
 // ─── History view ───────────────────────────────────────────────────
+const expandedLifts = new Set();
+
 function formatHistoryDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function formatShortDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function renderSparkline(entries) {
+  const values = entries.map(e => {
+    let w = parseFloat(e.weight);
+    if (e.unit && e.unit !== currentUnit) {
+      w = currentUnit === 'kg' ? w / 2.20462 : w * 2.20462;
+    }
+    return calculate1RM(w, parseInt(e.reps));
+  }).filter(v => v !== null && v > 0);
+
+  if (values.length < 2) return '';
+
+  const W = 64, H = 20, pad = 2;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  const points = values.map((v, i) => {
+    const x = pad + (i / (values.length - 1)) * (W - 2 * pad);
+    const y = (H - pad) - ((v - min) / range) * (H - 2 * pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  return `<svg class="sparkline" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${points}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
 function renderHistory() {
-  const lifts = JSON.parse(localStorage.getItem('1rmLifts') || '{}');
-  const entries = Object.entries(lifts).sort(([a], [b]) => a.localeCompare(b));
+  const lifts = getLifts();
+  const liftList = Object.entries(lifts).sort(([a], [b]) => a.localeCompare(b));
   const el = document.getElementById('historyView');
 
-  if (entries.length === 0) {
-    el.innerHTML = '<div class="history-empty">No lifts recorded yet</div>';
+  if (liftList.length === 0) {
+    el.innerHTML = '<div class="history-empty">No lifts logged yet — hit Log after a set</div>';
     return;
   }
 
-  el.innerHTML = entries.map(([liftName, data]) => {
-    let weight = parseFloat(data.weight);
-    const storedUnit = data.unit || 'lbs';
-    if (storedUnit !== currentUnit) {
-      weight = currentUnit === 'kg' ? weight / 2.20462 : weight * 2.20462;
-    }
-    const oneRM = calculate1RM(weight, parseInt(data.reps));
-    const display = oneRM !== null
-      ? roundValue(oneRM, currentUnit).toFixed(shouldRound && currentUnit === 'lbs' ? 0 : 1) + ' ' + currentUnit
-      : '—';
-    const date = formatHistoryDate(data.date);
+  const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
 
-    return `<button class="history-item" data-lift="${liftName.replace(/"/g, '&quot;')}">
-      <span class="history-lift">${liftName}</span>
-      <span class="history-right">
-        <span class="history-1rm">${display}</span>
-        <span class="history-date">${date}</span>
-      </span>
-    </button>`;
+  el.innerHTML = liftList.map(([liftName, entries]) => {
+    const latest = entries[entries.length - 1];
+    let w = parseFloat(latest.weight);
+    if (latest.unit && latest.unit !== currentUnit) {
+      w = currentUnit === 'kg' ? w / 2.20462 : w * 2.20462;
+    }
+    const oneRM = calculate1RM(w, parseInt(latest.reps));
+    const display = oneRM !== null
+      ? roundValue(oneRM, currentUnit).toFixed(decimals) + ' ' + currentUnit
+      : '—';
+    const date = formatHistoryDate(latest.date);
+    const escaped = liftName.replace(/"/g, '&quot;');
+    const multi = entries.length > 1;
+    const isExpanded = expandedLifts.has(liftName);
+
+    const sparkline = multi ? renderSparkline(entries) : '';
+
+    let entriesHtml = '';
+    if (isExpanded) {
+      entriesHtml = '<div class="history-entries">' +
+        [...entries].reverse().map((entry, revIdx) => {
+          const origIdx = entries.length - 1 - revIdx;
+          let ew = parseFloat(entry.weight);
+          if (entry.unit && entry.unit !== currentUnit) {
+            ew = currentUnit === 'kg' ? ew / 2.20462 : ew * 2.20462;
+          }
+          const erm = calculate1RM(ew, parseInt(entry.reps));
+          const ermDisplay = erm !== null
+            ? roundValue(erm, currentUnit).toFixed(decimals) + ' ' + currentUnit
+            : '—';
+          const wDisplay = currentUnit === 'kg' ? ew.toFixed(1) : Math.round(ew).toString();
+          return `<div class="history-entry">
+            <span class="entry-set">${wDisplay} × ${entry.reps}</span>
+            <span class="entry-rm">→ ${ermDisplay}</span>
+            <span class="entry-date">${formatShortDate(entry.date)}</span>
+            <button class="delete-entry-btn" data-lift="${escaped}" data-index="${origIdx}" aria-label="Delete">&times;</button>
+          </div>`;
+        }).join('') +
+        '</div>';
+    }
+
+    return `<div class="history-lift-card">
+      <div class="history-row">
+        <button class="history-item" data-lift="${escaped}">
+          <span class="history-lift">${liftName}</span>
+          <span class="history-right">
+            <span class="history-1rm">${display}</span>
+            <span class="history-date">${date}</span>
+          </span>
+        </button>
+        ${multi ? `<div class="history-sparkline-area">${sparkline}</div>
+        <button class="history-expand-btn${isExpanded ? ' expanded' : ''}" data-lift="${escaped}" aria-label="Toggle entries">${entries.length}</button>` : ''}
+      </div>
+      ${entriesHtml}
+    </div>`;
   }).join('');
 
   el.querySelectorAll('.history-item').forEach(item => {
@@ -360,6 +447,31 @@ function renderHistory() {
       currentLift = liftName;
       loadLiftData(liftName);
       showView('calculatorView');
+    });
+  });
+
+  el.querySelectorAll('.history-expand-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const liftName = btn.dataset.lift;
+      if (expandedLifts.has(liftName)) expandedLifts.delete(liftName);
+      else expandedLifts.add(liftName);
+      renderHistory();
+    });
+  });
+
+  el.querySelectorAll('.delete-entry-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const liftName = btn.dataset.lift;
+      const idx = parseInt(btn.dataset.index);
+      const lifts = getLifts();
+      if (!lifts[liftName]) return;
+      lifts[liftName].splice(idx, 1);
+      if (lifts[liftName].length === 0) {
+        delete lifts[liftName];
+        expandedLifts.delete(liftName);
+      }
+      saveLifts(lifts);
+      renderHistory();
     });
   });
 }
@@ -488,14 +600,12 @@ document.querySelectorAll('#roundToggle .toggle-btn').forEach(btn => {
 document.getElementById('weight').addEventListener('input', () => {
   updateResult();
   saveState();
-  saveLiftData();
   if (currentView === 'percentageView') renderPercentageView();
 });
 
 document.getElementById('reps').addEventListener('input', () => {
   updateResult();
   saveState();
-  saveLiftData();
   if (currentView === 'percentageView') renderPercentageView();
 });
 
@@ -503,6 +613,14 @@ document.getElementById('liftType').addEventListener('change', () => {
   currentLift = document.getElementById('liftType').value;
   loadLiftData(currentLift);
   saveState();
+});
+
+// Log button
+document.getElementById('logBtn').addEventListener('click', () => {
+  saveLiftData();
+  const btn = document.getElementById('logBtn');
+  btn.textContent = 'Logged!';
+  setTimeout(() => { btn.textContent = 'Log'; }, 1500);
 });
 
 // Share button

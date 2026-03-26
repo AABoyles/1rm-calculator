@@ -352,10 +352,14 @@ input::placeholder {
     padding-bottom: 0.4rem;
 }
 
-/* ─── Share button ───────────────────────────────────────────────── */
-.share-btn {
-    display: block;
+/* ─── Result action buttons (Log / Share) ────────────────────────── */
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
     margin-top: 0.85rem;
+}
+
+.result-action-btn {
     padding: 0.35rem 0.9rem;
     background: rgba(255,255,255,0.15);
     border: 2px solid rgba(255,255,255,0.5);
@@ -369,7 +373,7 @@ input::placeholder {
     transition: background 0.12s, border-color 0.12s;
 }
 
-.share-btn:hover {
+.result-action-btn:hover {
     background: rgba(255,255,255,0.25);
     border-color: rgba(255,255,255,0.8);
 }
@@ -565,23 +569,32 @@ input::placeholder {
     text-align: center;
 }
 
+.history-lift-card {
+    border-bottom: 1px solid var(--rule);
+}
+
+.history-lift-card:last-child {
+    border-bottom: none;
+}
+
+.history-row {
+    display: flex;
+    align-items: center;
+}
+
 .history-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    padding: 0.7rem 1.75rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.7rem 1rem 0.7rem 1.75rem;
     background: none;
     border: none;
-    border-bottom: 1px solid var(--rule);
     cursor: pointer;
     text-align: left;
     transition: background 0.1s;
-    gap: 1rem;
-}
-
-.history-item:last-child {
-    border-bottom: none;
+    gap: 0.75rem;
 }
 
 .history-item:hover {
@@ -595,7 +608,11 @@ input::placeholder {
     letter-spacing: 0.04em;
     color: var(--ink);
     flex: 1;
+    min-width: 0;
     text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .history-right {
@@ -618,6 +635,111 @@ input::placeholder {
     font-family: var(--font-body);
     font-size: 0.7rem;
     color: var(--muted);
+}
+
+.history-sparkline-area {
+    display: flex;
+    align-items: center;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+}
+
+.sparkline {
+    display: block;
+    color: var(--red);
+    opacity: 0.7;
+}
+
+.history-expand-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 100%;
+    min-height: 2.6rem;
+    padding: 0 0.25rem;
+    margin-right: 0.5rem;
+    background: none;
+    border: none;
+    border-left: 1px solid var(--rule);
+    font-family: var(--font-cond);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.1s, background 0.1s;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.history-expand-btn::after {
+    content: '▾';
+    display: block;
+    font-size: 0.6rem;
+    line-height: 1;
+    margin-top: 1px;
+}
+
+.history-expand-btn.expanded::after {
+    content: '▴';
+}
+
+.history-expand-btn:hover {
+    color: var(--ink);
+    background: #F5F3EF;
+}
+
+/* ─── Expanded entry list ────────────────────────────────────────── */
+.history-entries {
+    background: #F7F5F1;
+    border-top: 1px solid var(--rule);
+}
+
+.history-entry {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem 0.45rem 2.5rem;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+}
+
+.history-entry:last-child {
+    border-bottom: none;
+}
+
+.entry-set {
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.entry-rm {
+    color: var(--ink);
+    font-weight: 500;
+    flex: 1;
+}
+
+.entry-date {
+    color: var(--muted);
+    font-size: 0.74rem;
+    flex-shrink: 0;
+}
+
+.delete-entry-btn {
+    background: none;
+    border: none;
+    color: #bbb;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+    transition: color 0.12s;
+}
+
+.delete-entry-btn:hover {
+    color: var(--red);
 }
 
 /* ─── Formula modal body ─────────────────────────────────────────── */
