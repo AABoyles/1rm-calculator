@@ -479,13 +479,55 @@ input::placeholder {
 }
 
 .percentage-view-header {
-    padding: 0.75rem 1.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1.25rem 0.6rem 1.5rem;
+    border-bottom: 1px solid var(--rule);
+    gap: 0.75rem;
+}
+
+.pct-header-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.pct-lift-name {
     font-family: var(--font-cond);
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
+}
+
+.pct-1rm {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--red);
+}
+
+.print-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    background: none;
+    border: 2px solid var(--rule);
+    color: var(--muted);
+    font-family: var(--font-cond);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.print-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
 }
 
 /* ─── Modal ──────────────────────────────────────────────────────── */
@@ -982,5 +1024,84 @@ input::placeholder {
 @media (max-width: 360px) {
     .form-row {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ─── Print ──────────────────────────────────────────────────────── */
+@media print {
+    @page { margin: 1.5cm; }
+
+    body {
+        background: white !important;
+        padding: 0 !important;
+        min-height: unset;
+        display: block;
+    }
+
+    .container {
+        border: none !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+    }
+
+    header,
+    .controls,
+    #calculatorView,
+    #historyView,
+    .tab-bar,
+    .modal,
+    .print-btn {
+        display: none !important;
+    }
+
+    #percentageView {
+        height: auto !important;
+        overflow: visible !important;
+        border: none !important;
+    }
+
+    .percentage-view-header {
+        border-bottom: 2px solid #000 !important;
+        padding: 0 0 0.5rem !important;
+        margin-bottom: 0.25rem;
+    }
+
+    .pct-lift-name {
+        font-size: 0.8rem !important;
+        color: #555 !important;
+    }
+
+    .pct-1rm {
+        font-size: 2rem !important;
+        color: #000 !important;
+    }
+
+    .percentage-table th,
+    .percentage-table td {
+        padding: 0.35rem 0.6rem !important;
+    }
+
+    .percentage-table th {
+        background: #eee !important;
+        color: #000 !important;
+    }
+
+    .percentage-table .zone-group td {
+        background: #f5f5f5 !important;
+        color: #555 !important;
+        padding: 0.2rem 0.6rem !important;
+    }
+
+    .percentage-table tbody tr:last-child {
+        background: none !important;
+    }
+
+    .percentage-table tbody tr:last-child td {
+        color: #000 !important;
+        font-weight: 700 !important;
+    }
+
+    .percentage-table tr:last-child td {
+        border-bottom: 1px solid #ccc !important;
     }
 }

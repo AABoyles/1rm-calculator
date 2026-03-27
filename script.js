@@ -415,8 +415,15 @@ function renderPercentageView() {
 
   const liftLabel = currentLift || 'Exercise';
   const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
+  const oneRMDisplay = roundValue(oneRM, currentUnit).toFixed(decimals) + ' ' + currentUnit;
 
-  let html = `<div class="percentage-view-header">${liftLabel}</div>`;
+  let html = `<div class="percentage-view-header">
+    <div class="pct-header-main">
+      <span class="pct-lift-name">${liftLabel}</span>
+      <span class="pct-1rm">${oneRMDisplay}</span>
+    </div>
+    <button class="print-btn" onclick="window.print()">Print</button>
+  </div>`;
   html += '<table class="percentage-table"><thead><tr><th>%</th><th>Weight</th><th>Reps</th></tr></thead><tbody>';
   for (const { zone, rows } of PCT_ZONES) {
     html += `<tr class="zone-group"><td colspan="3">${zone}</td></tr>`;
