@@ -359,6 +359,17 @@ function loadLiftData(liftName) {
   updateResult();
 }
 
+// Intensity zones for the percentage table
+const PCT_ZONES = [
+  { zone: 'Recovery',    rows: [{pct: 50, reps: '20+'}, {pct: 55, reps: '15–20'}] },
+  { zone: 'Volume',      rows: [{pct: 60, reps: '12–15'}, {pct: 65, reps: '10–12'}] },
+  { zone: 'Hypertrophy', rows: [{pct: 70, reps: '8–10'}, {pct: 75, reps: '6–8'}] },
+  { zone: 'Str-Hyp',     rows: [{pct: 80, reps: '4–6'}] },
+  { zone: 'Strength',    rows: [{pct: 85, reps: '3–5'}, {pct: 90, reps: '2–3'}] },
+  { zone: 'Near-Max',    rows: [{pct: 95, reps: '1–2'}] },
+  { zone: '1RM',         rows: [{pct: 100, reps: '1'}] },
+];
+
 // ─── View system ───────────────────────────────────────────────────
 const VIEWS = ['calculatorView', 'percentageView', 'historyView'];
 let currentView = 'calculatorView';
@@ -403,15 +414,17 @@ function renderPercentageView() {
   }
 
   const liftLabel = currentLift || 'Exercise';
-  const percentages = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+  const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
 
   let html = `<div class="percentage-view-header">${liftLabel}</div>`;
-  html += '<table class="percentage-table"><thead><tr><th>%</th><th>Weight</th></tr></thead><tbody>';
-  for (const pct of percentages) {
-    const pctWeight = oneRM * (pct / 100);
-    const rounded = roundValue(pctWeight, currentUnit);
-    const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
-    html += `<tr><td>${pct}%</td><td>${rounded.toFixed(decimals)} ${currentUnit}</td></tr>`;
+  html += '<table class="percentage-table"><thead><tr><th>%</th><th>Weight</th><th>Reps</th></tr></thead><tbody>';
+  for (const { zone, rows } of PCT_ZONES) {
+    html += `<tr class="zone-group"><td colspan="3">${zone}</td></tr>`;
+    for (const { pct, reps } of rows) {
+      const pctWeight = oneRM * (pct / 100);
+      const rounded = roundValue(pctWeight, currentUnit);
+      html += `<tr><td>${pct}%</td><td>${rounded.toFixed(decimals)} ${currentUnit}</td><td>${reps}</td></tr>`;
+    }
   }
   html += '</tbody></table>';
   el.innerHTML = html;

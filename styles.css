@@ -557,7 +557,7 @@ input::placeholder {
 
 .percentage-table th,
 .percentage-table td {
-    padding: 0.6rem 1.5rem;
+    padding: 0.5rem 1.25rem;
     font-family: var(--font-body);
     font-size: 0.9rem;
     text-align: right;
@@ -583,7 +583,7 @@ input::placeholder {
     border-bottom: none;
 }
 
-.percentage-table tbody tr:hover {
+.percentage-table tbody tr:not(.zone-group):hover {
     background: #F7F5F1;
 }
 
@@ -594,6 +594,19 @@ input::placeholder {
 
 .percentage-table tbody tr:last-child td {
     color: var(--red);
+}
+
+.percentage-table .zone-group td {
+    background: #EDEAE5;
+    font-family: var(--font-cond);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.25rem 1.25rem;
+    border-bottom: none;
+    text-align: left;
 }
 
 /* ─── History view ───────────────────────────────────────────────── */
@@ -957,8 +970,12 @@ input::placeholder {
 
     .percentage-table th,
     .percentage-table td {
-        padding: 0.55rem 1rem;
+        padding: 0.45rem 0.75rem;
         font-size: 0.85rem;
+    }
+
+    .percentage-table .zone-group td {
+        padding: 0.2rem 0.75rem;
     }
 }
 
