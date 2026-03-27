@@ -87,11 +87,13 @@
                     <span class="result-value" id="result">—</span>
                     <span class="result-unit" id="unitDisplay">lbs</span>
                 </div>
+                <button class="bw-classification" id="bwClassification" hidden></button>
                 <div class="result-actions" id="resultActions" hidden>
                     <button class="result-action-btn" id="logBtn">Log</button>
                     <button class="result-action-btn" id="shareBtn">Share</button>
                 </div>
             </div>
+
         </div>
 
         <div id="historyView" hidden></div>
@@ -167,6 +169,23 @@
                 <a class="formula-link" href="https://sportrxiv.org/index.php/server/preprint/view/768" target="_blank" rel="noopener">
                     Read the paper &rarr;
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bodyweight Modal -->
+    <div class="modal" id="bwModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bodyweight</h2>
+                <button class="close-btn" id="closeBWModal">&times;</button>
+            </div>
+            <div class="formula-body">
+                <p>Enter your bodyweight to see how your 1RM compares to strength standards.</p>
+                <div class="bw-modal-row">
+                    <input type="number" id="bodyweight" placeholder="0" min="0">
+                    <span id="bwUnit">lbs</span>
+                </div>
             </div>
         </div>
     </div>

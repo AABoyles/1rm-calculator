@@ -378,6 +378,52 @@ input::placeholder {
     border-color: rgba(255,255,255,0.8);
 }
 
+/* ─── Bodyweight classification (inside result box) ──────────────── */
+.bw-classification {
+    display: block;
+    margin-top: 0.6rem;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-cond);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    text-align: left;
+    transition: color 0.12s;
+}
+
+.bw-classification:hover {
+    color: rgba(255,255,255,0.95);
+}
+
+.bw-level {
+    color: #fff;
+    font-weight: 700;
+}
+
+/* ─── Bodyweight modal input ─────────────────────────────────────── */
+.bw-modal-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.bw-modal-row input[type="number"] {
+    width: 7rem;
+}
+
+.bw-modal-row span {
+    font-family: var(--font-cond);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
 /* ─── Tab bar ────────────────────────────────────────────────────── */
 .tab-bar {
     display: flex;

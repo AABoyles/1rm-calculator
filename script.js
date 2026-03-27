@@ -68,6 +68,53 @@ const COMMON_LIFTS = [
   'Cable Chest Press'
 ];
 
+// Strength standards — thresholds are [Novice, Intermediate, Advanced, Elite] BW multipliers.
+// Below the first threshold = Beginner. At or above the last = Elite.
+const STRENGTH_STANDARDS = {
+  squat:    [0.75, 1.25, 1.75, 2.25],
+  deadlift: [1.0,  1.5,  2.0,  2.5],
+  bench:    [0.5,  0.75, 1.25, 1.5],
+  press:    [0.35, 0.5,  0.75, 1.0],
+  row:      [0.5,  0.75, 1.0,  1.5],
+};
+
+const LIFT_CATEGORY = {
+  'Back Squat': 'squat', 'Front Squat': 'squat', 'Goblet Squat': 'squat',
+  'Smith Machine Squat': 'squat', 'Belt Squat': 'squat',
+  'Pendulum Squat': 'squat', 'Hack Squat': 'squat',
+  'Deadlift': 'deadlift', 'Sumo Deadlift': 'deadlift', 'Trap Bar Deadlift': 'deadlift',
+  'Romanian Deadlift': 'deadlift', 'Stiff Leg Deadlift': 'deadlift',
+  'Conventional Deadlift': 'deadlift', 'Deficit Deadlift': 'deadlift',
+  'Bench Press': 'bench', 'Incline Bench Press': 'bench', 'Decline Bench Press': 'bench',
+  'Dumbbell Bench Press': 'bench', 'Smith Machine Bench Press': 'bench',
+  'Floor Press': 'bench', 'Close Grip Bench Press': 'bench',
+  'Chest Press': 'bench', 'Machine Chest Press': 'bench', 'Cable Chest Press': 'bench',
+  'Barbell Shoulder Press': 'press', 'Dumbbell Shoulder Press': 'press',
+  'Smith Machine Shoulder Press': 'press', 'Military Press': 'press', 'Push Press': 'press',
+  'Barbell Rows': 'row', 'Pendulum Row': 'row', 'Smith Machine Row': 'row',
+  'Seal Row': 'row', 'T-Bar Row': 'row', 'Machine Row': 'row',
+  'Dumbbell Row': 'row', 'Underhand Row': 'row', 'Bent Over Row': 'row',
+  'Yates Row': 'row', 'Upright Row': 'row',
+};
+
+const STRENGTH_LEVELS = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'];
+
+function classifyStrength(liftName, oneRM, bodyweight) {
+  if (!oneRM || !bodyweight || bodyweight <= 0) return null;
+  const category = LIFT_CATEGORY[liftName];
+  const thresholds = category ? STRENGTH_STANDARDS[category] : null;
+  const ratio = oneRM / bodyweight;
+  let level = null;
+  if (thresholds) {
+    let idx = thresholds.length; // default to Elite
+    for (let i = 0; i < thresholds.length; i++) {
+      if (ratio < thresholds[i]) { idx = i; break; }
+    }
+    level = STRENGTH_LEVELS[idx];
+  }
+  return { ratio, level };
+}
+
 // State
 let currentUnit = 'lbs'; // 'lbs' or 'kg'
 let shouldRound = true;
@@ -123,6 +170,34 @@ function roundValue(value, unit) {
   }
 }
 
+// Update bodyweight classification display (inside result box)
+function updateBWClassification() {
+  const el = document.getElementById('bwClassification');
+  const bw = parseFloat(document.getElementById('bodyweight').value);
+  const weight = parseFloat(document.getElementById('weight').value);
+  const reps = parseInt(document.getElementById('reps').value);
+
+  if (!weight || !reps) { el.hidden = true; return; }
+
+  const oneRM = calculate1RM(weight, reps);
+  if (oneRM === null) { el.hidden = true; return; }
+
+  el.hidden = false;
+
+  if (!bw || bw <= 0) {
+    el.innerHTML = 'Set bodyweight &rarr;';
+    return;
+  }
+
+  const result = classifyStrength(currentLift, oneRM, bw);
+  if (!result) { el.innerHTML = 'Set bodyweight &rarr;'; return; }
+
+  const ratioStr = result.ratio.toFixed(2) + '&times; BW';
+  el.innerHTML = result.level
+    ? `${ratioStr} &middot; <span class="bw-level">${result.level}</span>`
+    : ratioStr;
+}
+
 // Update result display
 function updateResult() {
   const weight = parseFloat(document.getElementById('weight').value);
@@ -131,9 +206,12 @@ function updateResult() {
   const resultEl = document.getElementById('result');
   const resultActions = document.getElementById('resultActions');
 
+  const bwEl = document.getElementById('bwClassification');
+
   if (!weight || weight <= 0 || !reps || reps < 1) {
     resultEl.textContent = '—';
     resultActions.hidden = true;
+    bwEl.hidden = true;
     return;
   }
 
@@ -141,6 +219,7 @@ function updateResult() {
   if (oneRM === null) {
     resultEl.textContent = '—';
     resultActions.hidden = true;
+    bwEl.hidden = true;
     return;
   }
   const rounded = roundValue(oneRM, currentUnit);
@@ -149,6 +228,7 @@ function updateResult() {
   const decimals = shouldRound && currentUnit === 'lbs' ? 0 : 1;
   resultEl.textContent = rounded.toFixed(decimals);
   resultActions.hidden = false;
+  updateBWClassification();
 }
 
 // Load state from URL hash (e.g. #lift=Back+Squat&weight=275&reps=5&unit=lbs)
@@ -215,6 +295,9 @@ function loadState() {
         btn.classList.toggle('active', (btn.dataset.value === 'round') === shouldRound);
       });
     }
+    if (state.bodyweight) {
+      document.getElementById('bodyweight').value = state.bodyweight;
+    }
   } catch (e) {
     console.error('Error loading state:', e);
   }
@@ -226,6 +309,7 @@ function saveState() {
     liftType: document.getElementById('liftType').value,
     weight: document.getElementById('weight').value,
     reps: document.getElementById('reps').value,
+    bodyweight: document.getElementById('bodyweight').value,
     unit: currentUnit,
     shouldRound: shouldRound
   };
@@ -563,7 +647,9 @@ document.querySelectorAll('#unitToggle .toggle-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.classList.contains('active')) return;
     const weightInput = document.getElementById('weight');
+    const bwInput = document.getElementById('bodyweight');
     const existing = parseFloat(weightInput.value);
+    const existingBW = parseFloat(bwInput.value);
     document.querySelectorAll('#unitToggle .toggle-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentUnit = btn.dataset.value;
@@ -571,8 +657,13 @@ document.querySelectorAll('#unitToggle .toggle-btn').forEach(btn => {
       const converted = currentUnit === 'kg' ? existing / 2.20462 : existing * 2.20462;
       weightInput.value = parseFloat(converted.toFixed(1));
     }
+    if (existingBW > 0) {
+      const convertedBW = currentUnit === 'kg' ? existingBW / 2.20462 : existingBW * 2.20462;
+      bwInput.value = parseFloat(convertedBW.toFixed(1));
+    }
     document.getElementById('weightUnit').textContent = currentUnit;
     document.getElementById('unitDisplay').textContent = currentUnit;
+    document.getElementById('bwUnit').textContent = currentUnit;
     applyWeightStep();
     updateResult();
     if (currentView === 'historyView') renderHistory();
@@ -615,6 +706,11 @@ document.getElementById('liftType').addEventListener('change', () => {
   saveState();
 });
 
+document.getElementById('bodyweight').addEventListener('input', () => {
+  updateBWClassification();
+  saveState();
+});
+
 // Log button
 document.getElementById('logBtn').addEventListener('click', () => {
   saveLiftData();
@@ -643,6 +739,22 @@ document.getElementById('shareBtn').addEventListener('click', () => {
       btn.textContent = 'Copied!';
       setTimeout(() => { btn.textContent = 'Share'; }, 1500);
     });
+  }
+});
+
+// BW modal
+document.getElementById('bwClassification').addEventListener('click', () => {
+  document.getElementById('bwModal').classList.add('active');
+  document.getElementById('bodyweight').focus();
+});
+
+document.getElementById('closeBWModal').addEventListener('click', () => {
+  document.getElementById('bwModal').classList.remove('active');
+});
+
+document.getElementById('bwModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('bwModal')) {
+    document.getElementById('bwModal').classList.remove('active');
   }
 });
 
@@ -690,3 +802,4 @@ updateResult();
 // Initial UI updates
 document.getElementById('weightUnit').textContent = currentUnit;
 document.getElementById('unitDisplay').textContent = currentUnit;
+document.getElementById('bwUnit').textContent = currentUnit;
